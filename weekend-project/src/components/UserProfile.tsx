@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { User } from "../context/UserContext";
+import { User, useUserContext } from "../context/UserContext";
 
 const UserProfile = () => {
   const { id } = useParams<{ id: string }>();
+  const { state } = useUserContext();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -14,6 +15,18 @@ const UserProfile = () => {
         setLoading(true);
         setError(null);
 
+        // First check if the user exists in our context
+        const userId = parseInt(id as string, 10);
+        const contextUser = state.users.find((user) => user.id === userId);
+
+        if (contextUser) {
+          // Use the user from context if available
+          setUser(contextUser);
+          setLoading(false);
+          return;
+        }
+
+        // Fall back to API if not found in context
         const response = await fetch(
           `https://jsonplaceholder.typicode.com/users/${id}`
         );
@@ -32,7 +45,7 @@ const UserProfile = () => {
     };
 
     fetchUser();
-  }, [id]);
+  }, [id, state.users]);
 
   if (loading) {
     return (
@@ -79,12 +92,16 @@ const UserProfile = () => {
             <li>
               <span className="font-medium">Email:</span> {user.email}
             </li>
-            <li>
-              <span className="font-medium">Phone:</span> {user.phone}
-            </li>
-            <li>
-              <span className="font-medium">Website:</span> {user.website}
-            </li>
+            {user.phone && (
+              <li>
+                <span className="font-medium">Phone:</span> {user.phone}
+              </li>
+            )}
+            {user.website && (
+              <li>
+                <span className="font-medium">Website:</span> {user.website}
+              </li>
+            )}
           </ul>
         </div>
 
